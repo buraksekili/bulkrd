@@ -1,69 +1,61 @@
 package main
 
 import (
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"k8s.io/apimachinery/pkg/util/rand"
+	"github.com/kelseyhightower/envconfig"
+	"gopkg.in/yaml.v3"
 	"log"
+	"os"
 	"os/exec"
 )
 
 func main() {
-	cb, err := ioutil.ReadFile("./config.yaml")
+	var cfg Config
+	panicIfError(readYAMLConfig(&cfg))
+
+	// TODO: it needs a custom decoder for Resources field of Config.
+	err := envconfig.Process("BULKRD", &cfg)
 	if err != nil {
-		log.Fatalf("failed to read file, err: %v", err)
+		panic(err)
 	}
 
-	var c Config
-
-	err = yaml.Unmarshal(cb, &c)
-	if err != nil {
-		log.Fatalf("failed to unmarshal config to struct, err: %v", err)
+	for _, resource := range cfg.Resources {
+		panicIfError(
+			kubectl("apply", "-f", resource.TemplatePath, "-n", resource.Namespace, "--dry-run=client"),
+		)
 	}
-
-	//var defaultConfigFlags = genericclioptions.NewConfigFlags(true).WithDeprecatedPasswordFlag().WithDiscoveryBurst(300).WithDiscoveryQPS(50.0)
-	//matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(defaultConfigFlags)
-	//
-	//f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
-	//namespace, enforceNamespace, err := f.ToRawKubeConfigLoader().Namespace()
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//builder := f.NewBuilder()
-	//b := builder.
-	//	Unstructured().
-	//	LocalParam(true).
-	//	ContinueOnError().
-	//	NamespaceParam(namespace).DefaultNamespace().
-	//	FilenameParam(enforceNamespace, &resource.FilenameOptions{Filenames: []string{"./sample.yaml"}}).
-	//	Flatten()
-	//
-	//r := b.Do()
-	//if err := r.Err(); err != nil {
-	//	panic(err)
-	//}
-
-	for _, resource := range c.Resources {
-		if resource.Count.Exact > 0 && (resource.Count.Between.MinCount > 0 || resource.Count.Between.MaxCount > 0) {
-			panic("failed to validate count")
-		}
-
-		if resource.Namespace == "" {
-			resource.Namespace = "default"
-		}
-
-		rand.IntnRange(int(resource.Count.Between.MinCount), int(resource.Count.Between.MaxCount))
-
-		err = kubectl("apply", "-f", resource.TemplatePath, "-n", resource.Namespace)
-		if err != nil {
-			panic(err)
-		}
-	}
-
 }
 
 func kubectl(args ...string) error {
 	cmd := exec.Command("kubectl", args...)
-	return cmd.Run()
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("failed to run %v, output: \n%v", cmd.String(), string(output))
+		return err
+	}
+
+	log.Println(string(output))
+
+	return nil
+}
+
+func readYAMLConfig(cfg *Config) error {
+	f, err := os.Open("config.yaml")
+	if err != nil {
+		return err
+	}
+
+	decoder := yaml.NewDecoder(f)
+	err = decoder.Decode(cfg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func panicIfError(err error) {
+	if err != nil {
+		panic(err)
+	}
 }

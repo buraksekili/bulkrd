@@ -1,27 +1,28 @@
 package main
 
 type BetweenCount struct {
-	MinCount int64 `yaml:"minCount"`
-	MaxCount int64 `yaml:"maxCount"`
+	MinCount int64 `yaml:"minCount" json:"minCount"`
+	MaxCount int64 `yaml:"maxCount" json:"maxCount"`
 }
 
 type Count struct {
-	Exact   int64        `yaml:"exact"`
-	Between BetweenCount `yaml:"between"`
+	Exact   int64        `yaml:"exact" json:"exact,omitempty"`
+	Between BetweenCount `yaml:"between" json:"between,omitempty"`
 }
 
 type RandomField struct {
-	Field string `yaml:"field"`
-	Type  string `yaml:"type"`
+	Field string `yaml:"field" json:"field"`
+	Type  string `yaml:"type" json:"type"`
 }
 
 type Resource struct {
-	TemplatePath string        `yaml:"templatePath"`
-	Namespace    string        `yaml:"namespace"`
-	Count        Count         `yaml:"count"`
-	Randomize    []RandomField `yaml:"randomize"`
+	TemplatePath string        `yaml:"templatePath" json:"templatePath"`
+	Namespace    string        `yaml:"namespace" json:"namespace"`
+	Count        Count         `yaml:"count" json:"count"`
+	Randomize    []RandomField `yaml:"randomize" json:"randomize,omitempty"`
 }
 
 type Config struct {
-	Resources []Resource `yaml:"resources"`
+	Debug     bool       `yaml:"debug" json:"debug,omitempty"`
+	Resources []Resource `yaml:"resources" json:"resources,omitempty"`
 }
