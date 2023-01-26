@@ -1,3 +1,5 @@
+CONFIG_PATH=./examples/config.yaml
+
 fmt:
 	go fmt ./...
 	gofmt -s -w .
@@ -15,4 +17,4 @@ build:
 	go build
 
 run: build
-	./bulkrd
+	BULKRD_CONFIGPATH=./examples/config.yaml ./bulkrd

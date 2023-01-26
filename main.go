@@ -12,7 +12,7 @@ import (
 
 func main() {
 	var cfg Config
-	panicIfError(readYAMLConfig(&cfg))
+	setConfiguration(&cfg)
 
 	// TODO: it needs a custom decoder for Resources field of Config.
 	err := envconfig.Process("BULKRD", &cfg)
@@ -30,6 +30,12 @@ func main() {
 			},
 		)
 	}
+}
+
+func setConfiguration(cfg *Config) {
+	panicIfError(envconfig.Process("BULKRD", cfg))
+	panicIfError(readYAMLConfig(cfg.ConfigPath, cfg))
+	panicIfError(envconfig.Process("BULKRD", cfg))
 }
 
 var (
@@ -93,8 +99,8 @@ func kubectl(args ...string) error {
 	return nil
 }
 
-func readYAMLConfig(cfg *Config) error {
-	f, err := os.Open("config.yaml")
+func readYAMLConfig(configPath string, cfg *Config) error {
+	f, err := os.Open(configPath)
 	if err != nil {
 		return err
 	}

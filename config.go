@@ -23,6 +23,7 @@ type Resource struct {
 }
 
 type Config struct {
-	Debug     bool       `yaml:"debug" json:"debug,omitempty"`
-	Resources []Resource `yaml:"resources" json:"resources,omitempty"`
+	ConfigPath string     `json:"configPath" default:"./config.yaml"`
+	Debug      bool       `yaml:"debug" json:"debug,omitempty"`
+	Resources  []Resource `yaml:"resources" json:"resources,omitempty"`
 }

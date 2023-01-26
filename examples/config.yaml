@@ -1,0 +1,11 @@
+debug: true
+resources:
+  - templatePath: ./examples/apidefinition.yaml
+    namespace: default
+    count:
+      between:
+          minCount: 3
+          maxCount: 5
+    randomize:
+      - field: .spec.name
+        type: string
