@@ -1,12 +1,12 @@
 package main
 
 type BetweenCount struct {
-	MinCount int64 `yaml:"minCount" json:"minCount"`
-	MaxCount int64 `yaml:"maxCount" json:"maxCount"`
+	MinCount int `yaml:"minCount" json:"minCount"`
+	MaxCount int `yaml:"maxCount" json:"maxCount"`
 }
 
 type Count struct {
-	Exact   int64        `yaml:"exact" json:"exact,omitempty"`
+	Exact   int          `yaml:"exact" json:"exact,omitempty"`
 	Between BetweenCount `yaml:"between" json:"between,omitempty"`
 }
 

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"github.com/kelseyhightower/envconfig"
+	"golang.org/x/exp/rand"
 	"gopkg.in/yaml.v3"
 	"log"
 	"os"
@@ -19,9 +21,61 @@ func main() {
 	}
 
 	for _, resource := range cfg.Resources {
-		panicIfError(
-			kubectl("apply", "-f", resource.TemplatePath, "-n", resource.Namespace, "--dry-run=client"),
+		panicIfError(validResource(&resource))
+
+		runMultipleKubectl(
+			getCount(resource.Count),
+			func() error {
+				return kubectl("apply", "-f", resource.TemplatePath, "-n", resource.Namespace, "--dry-run=client")
+			},
 		)
+	}
+}
+
+var (
+	ErrInvalidExactCount = errors.New("failed to validate Resource Count: count cannot be negative")
+	ErrInvalidMinCount   = errors.New("failed to validate Resource Count: minCount cannot be negative")
+	ErrInvalidMaxCount   = errors.New("failed to validate Resource Count: maxCount cannot be negative")
+	ErrInvalidBetween    = errors.New("failed to validate Resource Count: maxCount cannot be smaller than minCount")
+)
+
+func validResource(resource *Resource) error {
+	if resource.Count.Exact < 0 {
+		return ErrInvalidExactCount
+	}
+
+	if resource.Count.Exact > 0 &&
+		(resource.Count.Between.MinCount > 0 || resource.Count.Between.MaxCount > 0) {
+		log.Println("Both Count type are specified, the count specified in Exact field will be used.")
+	}
+
+	if resource.Count.Between.MinCount < 0 {
+		return ErrInvalidMinCount
+	}
+
+	if resource.Count.Between.MaxCount < 0 {
+		return ErrInvalidMaxCount
+	}
+
+	if resource.Count.Between.MaxCount < resource.Count.Between.MinCount {
+		return ErrInvalidBetween
+	}
+
+	return nil
+}
+
+func getCount(count Count) int {
+	if count.Exact > 0 {
+		return count.Exact
+	}
+
+	return rand.Intn(count.Between.MaxCount-count.Between.MinCount) + count.Between.MinCount
+}
+
+func runMultipleKubectl(n int, kf func() error) {
+	log.Printf("running %v times\n", n)
+	for i := 0; i < n; i++ {
+		panicIfError(kf())
 	}
 }
 
